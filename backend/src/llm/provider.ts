@@ -86,7 +86,7 @@ export async function completeChat(args: {
 
       if (res.status >= 400) {
         const fail = statusError(res.status, raw, stage);
-        if (fail.error.retryable && attempt < policy.maxRetries) {
+        if (!fail.ok && fail.error.retryable && attempt < policy.maxRetries) {
           const after = parseRetryAfterMs(res.headers.get("retry-after") ?? undefined, args.now(), policy.maxDelayMs);
           await args.sleep(backoffMs(attempt, policy, after));
           lastFail = fail;
