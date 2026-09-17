@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Env files (never commit real secrets)
+.env
+.env.local
+.env.*.local
+
+# Backend build output
+backend/dist/
+
+# Next.js build output
+frontend/.next/
+frontend/out/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Test / coverage
+coverage/

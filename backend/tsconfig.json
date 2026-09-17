@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "lib": ["ES2022"],
+    "outDir": "dist",
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["../shared/*"]
+    },
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": false,
+    "sourceMap": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true
+  },
+  "include": ["src", "../shared"],
+  "exclude": ["node_modules", "dist", "src/**/*.test.ts", "src/__tests__", "src/__fixtures__"]
+}
