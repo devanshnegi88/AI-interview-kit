@@ -4,8 +4,8 @@ Turns a job description, a company website, and a number of days available into
 a personalized interview preparation kit (research, questions, flashcards, and
 a study schedule).
 
-This README covers Phases 1–8 (through company and interview research).
-Question generation, practice mode, and the batch evaluator land later.
+This README covers Phases 1–9 (through independent question generation).
+Flashcards, kit assembly UI, practice mode, and the batch evaluator land later.
 
 ## Project structure
 
@@ -18,7 +18,7 @@ Question generation, practice mode, and the batch evaluator land later.
 │       ├── http/        Phase 4: SSRF-safe HTTP client (crawler uses this later)
 │       ├── research/    Phase 5: dynamic same-domain crawler
 │       ├── llm/         Phase 6: generateWithLLM (Groq free tier)
-│       ├── generation/  Phase 7 extractRequirements; Phase 8 researchCompany
+│       ├── generation/  Phases 7–9: requirements, research, questions
 │       ├── validation/  Phase 2: Zod Appendix A schema, coverage, stable ids
 │       ├── scheduling/  Phase 2: deterministic day-by-day allocator
 │       ├── evaluation/  (later — reserved)
@@ -161,7 +161,7 @@ from Phase 1 is unchanged.
 
 ## What's deliberately NOT here yet
 
-Question generation, kit persistence, practice mode, and `npm run evaluate`.
+Flashcard generation, kit persistence, practice mode, and `npm run evaluate`.
 LLM access is only through `generateWithLLM`.
 
 ## Phase 3 — Authentication
@@ -234,6 +234,17 @@ Crawled HTML is wrapped in `<UNTRUSTED_WEB_CONTENT>` and never placed in the
 system prompt. Appendix A `company_brief` is `{ summary, what_they_do, sources }`.
 Missing hiring or interview material is recorded honestly (`found: false`).
 Sources not seen in the crawl are dropped. Failed pages are skipped.
+
+## Phase 9 — Question generation
+
+Separate modules, one category each: `technical`, `behavioural`,
+`system-design`, `company-fit`. Inputs: extracted requirements, company brief,
+role, research context.
+
+Every question: `id`, `requirement_ids`, `category`, `prompt`, `answer_outline`,
+`difficulty` where difficulty is `1 | 2 | 3`. Ids must be real requirements.
+Must technical requirements get extra questions when the JD supports it.
+Invalid ids/category/difficulty fail Zod. Coverage loop is not in this phase.
 
 ## Known items to revisit in a later hardening pass
 

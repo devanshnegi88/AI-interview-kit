@@ -149,6 +149,72 @@ export const QuestionSchema = z
   })
   .strict();
 
+/** LLM draft — ids and type are assigned/forced by the stage, not trusted from the model. */
+export const QuestionDraftSchema = z
+  .object({
+    difficulty: DifficultySchema,
+    prompt: z.string().trim().min(8),
+    why_asked: z.string().trim().min(1),
+    requirement_ids: z.array(z.string()).default([]),
+    tags: z.array(z.string().trim().min(1)).min(1),
+    answer_outline: z.array(z.string().trim().min(1)).min(1),
+    follow_ups: z.array(z.string().trim().min(1)).default([]),
+    estimated_minutes: z.number().int().min(5).max(180),
+  })
+  .strict();
+
+export const QuestionBatchSchema = z
+  .object({
+    questions: z.array(QuestionDraftSchema),
+  })
+  .strict();
+
+export const QuestionCategorySchema = z.enum(["technical", "behavioural", "system-design", "company-fit"]);
+
+export const QuestionDifficultyLevelSchema = z.union([z.literal(1), z.literal(2), z.literal(3)]);
+
+/** LLM draft for Phase 9 — no id, no category (the stage supplies those). */
+export const GeneratedQuestionDraftSchema = z
+  .object({
+    requirement_ids: z.array(z.string()).min(1),
+    prompt: z.string().trim().min(8),
+    answer_outline: z.array(z.string().trim().min(1)).min(1),
+    difficulty: QuestionDifficultyLevelSchema,
+  })
+  .strict();
+
+export const GeneratedQuestionSchema = z
+  .object({
+    id: stableId,
+    requirement_ids: z.array(z.string()).min(1),
+    category: QuestionCategorySchema,
+    prompt: z.string().trim().min(8),
+    answer_outline: z.array(z.string().trim().min(1)).min(1),
+    difficulty: QuestionDifficultyLevelSchema,
+  })
+  .strict();
+
+export function generatedQuestionBatchSchema(allowedRequirementIds: Set<string>) {
+  return z
+    .object({
+      questions: z.array(GeneratedQuestionDraftSchema),
+    })
+    .strict()
+    .superRefine((value, ctx) => {
+      value.questions.forEach((q, i) => {
+        q.requirement_ids.forEach((rid, j) => {
+          if (!allowedRequirementIds.has(rid)) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: `requirement_ids contains unknown id ${rid}`,
+              path: ["questions", i, "requirement_ids", j],
+            });
+          }
+        });
+      });
+    });
+}
+
 export const FlashcardSchema = z
   .object({
     id: stableId,

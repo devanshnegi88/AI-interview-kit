@@ -42,6 +42,20 @@ export type QuestionType =
 
 export type Difficulty = "easy" | "medium" | "hard";
 
+export type QuestionCategory = "technical" | "behavioural" | "system-design" | "company-fit";
+
+export type QuestionDifficultyLevel = 1 | 2 | 3;
+
+/** Phase 9 generation output. */
+export interface GeneratedQuestion {
+  id: string;
+  requirement_ids: string[];
+  category: QuestionCategory;
+  prompt: string;
+  answer_outline: string[];
+  difficulty: QuestionDifficultyLevel;
+}
+
 export type RequirementPriority = "must_have" | "nice_to_have";
 
 export type RequirementKind = "technical" | "behavioural" | "domain";
