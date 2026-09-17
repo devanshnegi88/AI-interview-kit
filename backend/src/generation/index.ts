@@ -1,10 +1,10 @@
 /**
- * generation/ — LLM-backed stages (later).
+ * generation/ — LLM-backed stages.
  *
- * Requirement extraction, company brief, questions, and flashcards must
- * call `generateWithLLM` from `../llm`. Do not call a vendor SDK here.
- * Coverage, scheduling, IDs, and structure stay in validation/.
+ * Phase 7: extractRequirements (JD → requirements[]).
+ * Later: company brief, questions, flashcards — all via generateWithLLM.
  */
 
 export { generateWithLLM, createLlmRuntime } from "../llm";
 export type { GenerateWithLlmArgs, LlmResult } from "../llm";
+export { extractRequirements, toKitRequirement, REQUIREMENT_EXTRACTION_PROMPT } from "./extractRequirements";

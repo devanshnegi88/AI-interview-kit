@@ -15,6 +15,10 @@ export const DifficultySchema = z.enum(["easy", "medium", "hard"]);
 
 export const RequirementPrioritySchema = z.enum(["must_have", "nice_to_have"]);
 
+export const RequirementKindSchema = z.enum(["technical", "behavioural", "domain"]);
+
+export const ExtractedPrioritySchema = z.enum(["must", "nice"]);
+
 export const KitSourceSchema = z
   .object({
     job_description: z.string().trim().min(20, "job description is too short"),
@@ -49,6 +53,42 @@ export const RequirementSchema = z
     id: stableId,
     text: z.string().trim().min(1),
     priority: RequirementPrioritySchema,
+    kind: RequirementKindSchema.optional(),
+  })
+  .strict();
+
+/** LLM draft — ids are assigned after parse, never trusted from the model. */
+export const RequirementDraftSchema = z
+  .object({
+    text: z.string().trim().min(1),
+    kind: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .transform((k) => (k === "behavioral" ? "behavioural" : k))
+      .pipe(RequirementKindSchema),
+    priority: ExtractedPrioritySchema,
+  })
+  .strict();
+
+export const RequirementExtractionSchema = z
+  .object({
+    requirements: z.array(RequirementDraftSchema),
+  })
+  .strict();
+
+export const ExtractedRequirementSchema = z
+  .object({
+    id: stableId,
+    text: z.string().trim().min(1),
+    kind: RequirementKindSchema,
+    priority: ExtractedPrioritySchema,
+  })
+  .strict();
+
+export const ExtractedRequirementsSchema = z
+  .object({
+    requirements: z.array(ExtractedRequirementSchema),
   })
   .strict();
 

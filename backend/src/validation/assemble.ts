@@ -32,6 +32,7 @@ function assignRequirements(draft: KitDraft): { requirements: Requirement[]; req
       id,
       text: req.text.trim(),
       priority: req.priority,
+      ...(req.kind ? { kind: req.kind } : {}),
     };
   });
   return { requirements: byId(assigned), reqMap };

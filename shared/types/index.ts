@@ -44,6 +44,10 @@ export type Difficulty = "easy" | "medium" | "hard";
 
 export type RequirementPriority = "must_have" | "nice_to_have";
 
+export type RequirementKind = "technical" | "behavioural" | "domain";
+
+export type ExtractedPriority = "must" | "nice";
+
 export type ScheduleItemKind = "question" | "flashcard" | "review";
 
 export type CoverageGapSeverity = "error" | "warning";
@@ -79,6 +83,15 @@ export interface Requirement {
   id: string;
   text: string;
   priority: RequirementPriority;
+  kind?: RequirementKind;
+}
+
+/** Phase 7 extraction output. priority is must/nice; kit mapping uses must_have/nice_to_have. */
+export interface ExtractedRequirement {
+  id: string;
+  text: string;
+  kind: RequirementKind;
+  priority: ExtractedPriority;
 }
 
 export interface Role {

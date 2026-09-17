@@ -4,9 +4,8 @@ Turns a job description, a company website, and a number of days available into
 a personalized interview preparation kit (research, questions, flashcards, and
 a study schedule).
 
-This README covers Phases 1–6 (through the shared LLM abstraction).
-Requirement extraction, question generation, practice mode, and the batch
-evaluator land later.
+This README covers Phases 1–7 (through requirement extraction). Company-brief
+generation, question generation, practice mode, and the batch evaluator land later.
 
 ## Project structure
 
@@ -19,7 +18,7 @@ evaluator land later.
 │       ├── http/        Phase 4: SSRF-safe HTTP client (crawler uses this later)
 │       ├── research/    Phase 5: dynamic same-domain crawler
 │       ├── llm/         Phase 6: generateWithLLM (Groq free tier)
-│       ├── generation/  (later — stages call llm/, not a vendor SDK)
+│       ├── generation/  Phase 7: extractRequirements; later stages TBD
 │       ├── validation/  Phase 2: Zod Appendix A schema, coverage, stable ids
 │       ├── scheduling/  Phase 2: deterministic day-by-day allocator
 │       ├── evaluation/  (later — reserved)
@@ -162,7 +161,7 @@ from Phase 1 is unchanged.
 
 ## What's deliberately NOT here yet
 
-Requirement extraction, question generation, kit persistence, practice mode,
+Company-brief generation, question generation, kit persistence, practice mode,
 and `npm run evaluate`. LLM access is only through `generateWithLLM`.
 
 ## Phase 3 — Authentication
@@ -216,6 +215,17 @@ Zod again. Invalid after that is a structured `{ ok: false, error }` — the
 model is never trusted as-is.
 
 Retries: 429, 408, 5xx, network (honors Retry-After). Never: 400, 401, 403.
+
+## Phase 7 — Requirement extraction
+
+`extractRequirements(jd)` is independently callable. It uses `generateWithLLM`,
+then assigns content-addressed `req_` ids and validates with Phase 2 Zod
+(`ExtractedRequirementSchema`: `id`, `text`, `kind`, `priority`).
+
+- kind: `technical` | `behavioural` | `domain`
+- priority: `must` | `nice` (from JD wording only; no invented skills)
+
+A two-line JD yields a thin list. Invalid kind/priority/JSON is a structured failure.
 
 ## Known items to revisit in a later hardening pass
 

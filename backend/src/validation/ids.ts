@@ -49,8 +49,8 @@ export function stableId(kind: IdKind, ...parts: string[]): string {
   return `${kind}_${digest}`;
 }
 
-export function requirementId(text: string, priority: string): string {
-  return stableId("req", text, priority);
+export function requirementId(text: string, priority: string, kind = ""): string {
+  return kind ? stableId("req", text, priority, kind) : stableId("req", text, priority);
 }
 
 export function questionId(type: string, prompt: string): string {
