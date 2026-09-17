@@ -3,8 +3,8 @@
  *
  * Phase 7: extractRequirements.
  * Phase 8: researchCompany.
- * Phase 9: independent question categories (technical, behavioural,
- * system-design, company-fit).
+ * Phase 9: independent question categories.
+ * Phase 10: coverage loop (deterministic checker + missing-question fill).
  */
 
 export { generateWithLLM, createLlmRuntime } from "../llm";
@@ -21,3 +21,6 @@ export {
   QUESTION_CATEGORIES,
 } from "./questions";
 export type { QuestionGenContext, QuestionGenerationBundle } from "./questions";
+export { runCoverageLoop, MAX_COVERAGE_PASSES } from "./coverageLoop";
+export type { CoverageLoopResult, CoverageLoopOptions } from "./coverageLoop";
+export { generateMissingQuestions } from "./questions/missing";

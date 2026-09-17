@@ -4,7 +4,7 @@ Turns a job description, a company website, and a number of days available into
 a personalized interview preparation kit (research, questions, flashcards, and
 a study schedule).
 
-This README covers Phases 1–9 (through independent question generation).
+This README covers Phases 1–10 (through the coverage loop).
 Flashcards, kit assembly UI, practice mode, and the batch evaluator land later.
 
 ## Project structure
@@ -18,7 +18,7 @@ Flashcards, kit assembly UI, practice mode, and the batch evaluator land later.
 │       ├── http/        Phase 4: SSRF-safe HTTP client (crawler uses this later)
 │       ├── research/    Phase 5: dynamic same-domain crawler
 │       ├── llm/         Phase 6: generateWithLLM (Groq free tier)
-│       ├── generation/  Phases 7–9: requirements, research, questions
+│       ├── generation/  Phases 7–10: requirements, research, questions, coverage loop
 │       ├── validation/  Phase 2: Zod Appendix A schema, coverage, stable ids
 │       ├── scheduling/  Phase 2: deterministic day-by-day allocator
 │       ├── evaluation/  (later — reserved)
@@ -244,7 +244,16 @@ role, research context.
 Every question: `id`, `requirement_ids`, `category`, `prompt`, `answer_outline`,
 `difficulty` where difficulty is `1 | 2 | 3`. Ids must be real requirements.
 Must technical requirements get extra questions when the JD supports it.
-Invalid ids/category/difficulty fail Zod. Coverage loop is not in this phase.
+Invalid ids/category/difficulty fail Zod.
+
+## Phase 10 — Coverage loop
+
+`runCoverageLoop` generates questions, then `computeMustCoverage` (deterministic
+code, never an LLM). Uncovered must-haves get a bounded fill pass
+(`MAX_COVERAGE_PASSES = 2`). The model may write missing questions; it does
+not decide `passed`. Still-uncovered must-haves are reported in
+`uncovered_requirement_ids` — they are not silently shipped as covered.
+Duplicate question ids are dropped; invalid requirement refs are ignored.
 
 ## Known items to revisit in a later hardening pass
 

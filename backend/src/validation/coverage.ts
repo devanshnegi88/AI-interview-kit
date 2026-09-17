@@ -36,15 +36,48 @@ export const COVERAGE_CODES = {
  */
 
 /** Step 1: collect all must requirement IDs. Sorted, unique, no LLM. */
-export function collectMustRequirementIds(requirements: Requirement[]): string[] {
-  return uniqueSorted(
-    requirements.filter((r) => r.priority === "must_have").map((r) => r.id),
-  );
+export function isMustPriority(priority: string): boolean {
+  return priority === "must_have" || priority === "must";
+}
+
+export function collectMustRequirementIds(requirements: Array<{ id: string; priority: string }>): string[] {
+  return uniqueSorted(requirements.filter((r) => isMustPriority(r.priority)).map((r) => r.id));
 }
 
 /** Step 2: collect requirement IDs referenced by questions. Sorted, unique, no LLM. */
-export function collectReferencedRequirementIds(questions: Question[]): string[] {
-  return uniqueSorted(questions.flatMap((q) => q.requirement_ids));
+export function collectReferencedRequirementIds(
+  questions: Array<{ requirement_ids: string[] }>,
+  knownIds?: Set<string>,
+): string[] {
+  const ids = questions.flatMap((q) => q.requirement_ids);
+  return uniqueSorted(knownIds ? ids.filter((id) => knownIds.has(id)) : ids);
+}
+
+/** Must-requirement coverage only (no flashcard / type quotas). Deterministic. */
+export interface MustCoverageReport {
+  passed: boolean;
+  must_requirement_ids: string[];
+  uncovered_requirement_ids: string[];
+  referenced_requirement_ids: string[];
+}
+
+export function computeMustCoverage(input: {
+  requirements: Array<{ id: string; priority: string }>;
+  questions: Array<{ requirement_ids: string[] }>;
+}): MustCoverageReport {
+  const known = new Set(input.requirements.map((r) => r.id));
+  const must_requirement_ids = collectMustRequirementIds(input.requirements);
+  const referenced_requirement_ids = collectReferencedRequirementIds(input.questions, known);
+  const uncovered_requirement_ids = calculateUncoveredIds(
+    must_requirement_ids,
+    referenced_requirement_ids,
+  );
+  return {
+    passed: must_requirement_ids.length > 0 && uncovered_requirement_ids.length === 0,
+    must_requirement_ids,
+    uncovered_requirement_ids,
+    referenced_requirement_ids,
+  };
 }
 
 /**

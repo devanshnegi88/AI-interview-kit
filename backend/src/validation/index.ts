@@ -23,10 +23,13 @@ export {
   collectMustRequirementIds,
   collectReferencedRequirementIds,
   computeCoverage,
+  computeMustCoverage,
+  isMustPriority,
   minCountsByType,
   minFlashcards,
   COVERAGE_CODES,
 } from "./coverage";
+export type { MustCoverageReport } from "./coverage";
 export { validateFlashcards, FLASHCARD_CODES } from "./flashcards";
 export {
   ensureId,
