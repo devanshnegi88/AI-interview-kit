@@ -48,12 +48,16 @@ export { validateQuestions, QUESTION_CODES } from "./questions";
 export { validateRequirements, REQUIREMENT_CODES } from "./requirements";
 export { validateSchedule, SCHEDULE_CODES } from "./scheduleCheck";
 export {
+  AppendixCompanyBriefSchema,
   CompanyBriefSchema,
+  CompanyInterviewLlmSchema,
   CoverageReportSchema,
   FlashcardSchema,
   InterviewKitSchema,
   KitSourceSchema,
+  ProcessResearchSchema,
   QuestionSchema,
+  ResearchSourceSchema,
   ExtractedPrioritySchema,
   ExtractedRequirementSchema,
   ExtractedRequirementsSchema,

@@ -3,7 +3,7 @@
  *
  * Discovers pages from the homepage. Paths like /careers are ranking
  * signals, not required. Retrieval goes through the Phase 4 HTTP client.
- * No LLM research in this phase.
+ * Phase 8 researchCompany (generation/) calls this crawler, then the LLM.
  */
 
 export { createCompanyCrawler } from "./crawl";

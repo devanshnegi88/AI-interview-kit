@@ -48,6 +48,38 @@ export const CompanyBriefSchema = z
   })
   .strict();
 
+/** Appendix A company_brief (Phase 8 research output). */
+export const ResearchSourceSchema = z
+  .object({
+    url: z.string().url(),
+    title: z.string(),
+  })
+  .strict();
+
+export const AppendixCompanyBriefSchema = z
+  .object({
+    summary: z.string(),
+    what_they_do: z.string(),
+    sources: z.array(ResearchSourceSchema),
+  })
+  .strict();
+
+export const ProcessResearchSchema = z
+  .object({
+    found: z.boolean(),
+    summary: z.string(),
+    sources: z.array(ResearchSourceSchema),
+  })
+  .strict();
+
+export const CompanyInterviewLlmSchema = z
+  .object({
+    company_brief: AppendixCompanyBriefSchema,
+    hiring_process: ProcessResearchSchema,
+    interview_process: ProcessResearchSchema,
+  })
+  .strict();
+
 export const RequirementSchema = z
   .object({
     id: stableId,
