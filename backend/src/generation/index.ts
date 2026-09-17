@@ -1,14 +1,10 @@
 /**
- * generation/ — reserved for a later phase.
+ * generation/ — LLM-backed stages (later).
  *
- * LLM-backed stages: requirement extraction, company brief, question generation, flashcard generation. Added in the Generation phase.
- *
- * The LLM must NOT do coverage checking, scheduling, ID validation, or
- * structural validation — those live in validation/ and scheduling/ and
- * run on the model output via assembleKit / validateKit.
- *
- * Intentionally empty until the Generation phase. Exporting a marker
- * so the module resolves and the folder isn't lost to an empty-dir gitignore
- * quirk, without implementing any behavior yet.
+ * Requirement extraction, company brief, questions, and flashcards must
+ * call `generateWithLLM` from `../llm`. Do not call a vendor SDK here.
+ * Coverage, scheduling, IDs, and structure stay in validation/.
  */
-export const MODULE_NAME = "generation" as const;
+
+export { generateWithLLM, createLlmRuntime } from "../llm";
+export type { GenerateWithLlmArgs, LlmResult } from "../llm";

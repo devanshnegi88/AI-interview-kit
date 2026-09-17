@@ -4,9 +4,9 @@ Turns a job description, a company website, and a number of days available into
 a personalized interview preparation kit (research, questions, flashcards, and
 a study schedule).
 
-This README covers Phases 1–5 (foundation, deterministic core, authentication,
-secure HTTP client, company crawler). Generation, practice mode, and the
-batch evaluator land later.
+This README covers Phases 1–6 (through the shared LLM abstraction).
+Requirement extraction, question generation, practice mode, and the batch
+evaluator land later.
 
 ## Project structure
 
@@ -18,7 +18,8 @@ batch evaluator land later.
 │       ├── kits/        (later — reserved)
 │       ├── http/        Phase 4: SSRF-safe HTTP client (crawler uses this later)
 │       ├── research/    Phase 5: dynamic same-domain crawler
-│       ├── generation/  (later — reserved)
+│       ├── llm/         Phase 6: generateWithLLM (Groq free tier)
+│       ├── generation/  (later — stages call llm/, not a vendor SDK)
 │       ├── validation/  Phase 2: Zod Appendix A schema, coverage, stable ids
 │       ├── scheduling/  Phase 2: deterministic day-by-day allocator
 │       ├── evaluation/  (later — reserved)
@@ -161,8 +162,8 @@ from Phase 1 is unchanged.
 
 ## What's deliberately NOT here yet
 
-LLM research/generation, kit persistence, practice mode, and
-`npm run evaluate`. The crawler does not assume `/careers`, `/jobs`, or `/about`.
+Requirement extraction, question generation, kit persistence, practice mode,
+and `npm run evaluate`. LLM access is only through `generateWithLLM`.
 
 ## Phase 3 — Authentication
 
@@ -203,11 +204,23 @@ product) in the URL, title, anchor, and text. Failed pages are skipped;
 research continues. Output: pages (url, title, cleaned text), discovered
 topic URLs, and skipped sources.
 
+## Phase 6 — LLM abstraction
+
+All model calls go through `generateWithLLM({ stage, systemPrompt, input, schema })`.
+Default provider is **Groq** (OpenAI-compatible, genuine free tier). Set
+`LLM_PROVIDER=xai` or `ollama` if needed. Concurrency defaults to 1 with a
+1.5s minimum interval.
+
+Pipeline: LLM text → JSON parse → Zod validate → bounded repair/retry →
+Zod again. Invalid after that is a structured `{ ok: false, error }` — the
+model is never trusted as-is.
+
+Retries: 429, 408, 5xx, network (honors Retry-After). Never: 400, 401, 403.
+
 ## Known items to revisit in a later hardening pass
 
 - `npm audit` on `frontend/` reports advisories against the Next.js 14.x line
   as a whole (see `next audit` output). We're pinned to `14.2.34`, the latest
   patched 14.x release, rather than jumping to Next 16 (a breaking change) for
   a foundation phase — worth revisiting before any real deployment.
-#   A I - i n t e r v i e w - k i t  
- 
+#
