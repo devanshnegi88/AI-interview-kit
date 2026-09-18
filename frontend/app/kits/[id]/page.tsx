@@ -37,6 +37,17 @@ function stageTone(state: string | undefined) {
   }
 }
 
+function itemStateTone(state: string | undefined) {
+  switch (state) {
+    case "pinned":
+      return "violet" as const;
+    case "edited":
+      return "amber" as const;
+    default:
+      return "sky" as const;
+  }
+}
+
 export default function KitDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -119,6 +130,9 @@ export default function KitDetailPage() {
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <Badge tone={statusTone(kit.status)}>{kit.status}</Badge>
             {kit.status === "failed" && kit.error ? <Badge tone="rose">{kit.error.code}</Badge> : null}
+            {(kit.company_brief as { state?: string } | null)?.state ? (
+              <Badge tone={itemStateTone((kit.company_brief as { state?: string }).state)}>{(kit.company_brief as { state?: string }).state}</Badge>
+            ) : null}
           </div>
           <h1 className="text-3xl font-bold text-slate-900">{kit.role?.title ?? "Interview kit"}</h1>
           <p className="mt-1 text-sm text-slate-600">{String(source.company_url ?? "Company URL not available")}</p>
@@ -197,6 +211,7 @@ export default function KitDetailPage() {
                   <div className="mb-2 flex flex-wrap items-center gap-2">
                     <Badge tone="sky">{question.type}</Badge>
                     <Badge tone="amber">{question.difficulty}</Badge>
+                    <Badge tone={itemStateTone(question.state)}>{question.state ?? "generated"}</Badge>
                   </div>
                   <p className="text-base font-semibold text-slate-900">{question.prompt}</p>
                   <div className="mt-3 text-sm text-slate-600">
@@ -208,6 +223,16 @@ export default function KitDetailPage() {
                     <ul className="mt-2 list-disc space-y-1 pl-5">
                       {question.answer_outline.map((item, index) => (
                         <li key={`${question.id}-outline-${index}`}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="mt-3 text-sm text-slate-600">
+                    <p className="font-medium text-slate-700">Generated/edited/pinned state</p>
+                    <ul className="mt-2 list-disc space-y-1 pl-5">
+                      {question.generated_edited_pinned.map((item, index) => (
+                        <li key={`${question.id}-generated-edited-pinned-${index}`}>
+                          {itemStateTone(item)} {item}
+                        </li>
                       ))}
                     </ul>
                   </div>
@@ -227,6 +252,9 @@ export default function KitDetailPage() {
             <div className="space-y-4">
               {kit.flashcards.map((flashcard) => (
                 <div key={flashcard.id} className="rounded-xl border border-slate-200 p-4">
+                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                    <Badge tone={itemStateTone(flashcard.state)}>{flashcard.state ?? "generated"}</Badge>
+                  </div>
                   <p className="font-semibold text-slate-900">Front</p>
                   <p className="mt-1 text-sm text-slate-700">{flashcard.front}</p>
                   <p className="mt-4 font-semibold text-slate-900">Back</p>

@@ -68,6 +68,7 @@ function assignQuestions(
       answer_outline: q.answer_outline.map((s) => s.trim()).filter(Boolean),
       follow_ups: q.follow_ups.map((s) => s.trim()).filter(Boolean),
       estimated_minutes: q.estimated_minutes,
+      ...(q.state ? { state: q.state } : {}),
     };
   });
 
@@ -100,6 +101,7 @@ function assignFlashcards(
         requirement_ids: linked,
         ...(fc.question_ids || legacyQuestionIds.length > 0 ? { question_ids: legacyQuestionIds.length > 0 ? legacyQuestionIds : linked } : {}),
         ...(fc.tags ? { tags: fc.tags.map((t) => t.trim()).filter(Boolean) } : {}),
+        ...(fc.state ? { state: fc.state } : {}),
       };
     }),
   );
@@ -133,7 +135,10 @@ export function assembleKit(draft: KitDraft): InterviewKit {
   const kit: InterviewKit = {
     version: "1.0",
     source: draft.source,
-    company_brief: draft.company_brief,
+    company_brief: {
+      ...draft.company_brief,
+      ...(draft.company_brief.state ? { state: draft.company_brief.state } : {}),
+    },
     role: {
       title: draft.role.title,
       level: draft.role.level,

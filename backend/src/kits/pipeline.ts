@@ -71,6 +71,7 @@ function blankCompanyBrief(companyUrl: string): CompanyBrief {
     interview_process: [],
     recent_news: [],
     citations: [],
+    state: "generated" as const,
   };
 }
 
@@ -99,6 +100,7 @@ function toCompanyBrief(
       title: source.title,
       snippet: source.title || "Company research source",
     })),
+    state: "generated" as const,
   };
 }
 
@@ -312,6 +314,7 @@ export async function runKitPipeline(
         answer_outline: question.answer_outline,
         follow_ups: [],
         estimated_minutes: question.difficulty === 3 ? 30 : question.difficulty === 2 ? 20 : 15,
+        state: "generated" as const,
       } satisfies Question;
     });
 
@@ -322,12 +325,12 @@ export async function runKitPipeline(
     if (!flashcardsResult.ok) {
       throw new Error(flashcardsResult.error.message ?? "Flashcard generation failed");
     }
-    flashcards = flashcardsResult.data;
+    flashcards = flashcardsResult.data.map((item) => ({ ...item, state: "generated" as const }));
     fieldState.flashcards = "done";
 
     const kitDraft = {
       source,
-      company_brief: companyBrief,
+      company_brief: { ...companyBrief, state: "generated" as const },
       role: role as Role,
       questions: generatedDrafts,
       flashcards,

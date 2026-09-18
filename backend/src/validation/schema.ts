@@ -45,6 +45,7 @@ export const CompanyBriefSchema = z
     interview_process: z.array(z.string().trim().min(1)),
     recent_news: z.array(z.string().trim().min(1)),
     citations: z.array(CitationSchema),
+    state: z.enum(["generated", "edited", "pinned"]).optional(),
   })
   .strict();
 
@@ -146,6 +147,7 @@ export const QuestionSchema = z
     answer_outline: z.array(z.string().trim().min(1)).min(1),
     follow_ups: z.array(z.string().trim().min(1)),
     estimated_minutes: z.number().int().min(5).max(180),
+    state: z.enum(["generated", "edited", "pinned"]).optional(),
   })
   .strict();
 
@@ -223,6 +225,7 @@ export const FlashcardSchema = z
     requirement_ids: z.array(z.string()).min(1),
     question_ids: z.array(z.string()).optional(),
     tags: z.array(z.string().trim().min(1)).optional(),
+    state: z.enum(["generated", "edited", "pinned"]).optional(),
   })
   .strict();
 

@@ -66,6 +66,8 @@ export type ScheduleItemKind = "question" | "flashcard" | "review";
 
 export type CoverageGapSeverity = "error" | "warning";
 
+export type ItemEditState = "generated" | "edited" | "pinned";
+
 /**
  * Inputs the user provides to generate a kit. Later phases fill the rest
  * of the kit from these three fields.
@@ -91,6 +93,7 @@ export interface CompanyBrief {
   interview_process: string[];
   recent_news: string[];
   citations: Citation[];
+  state?: ItemEditState;
 }
 
 export interface Requirement {
@@ -127,6 +130,7 @@ export interface Question {
   answer_outline: string[];
   follow_ups: string[];
   estimated_minutes: number;
+  state?: ItemEditState;
 }
 
 export interface Flashcard {
@@ -138,6 +142,7 @@ export interface Flashcard {
   question_ids?: string[];
   /** @deprecated compatibility alias retained while older phases still emit tags. */
   tags?: string[];
+  state?: ItemEditState;
 }
 
 export interface ScheduleItem {
