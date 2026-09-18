@@ -9,3 +9,7 @@
  * quirk, without implementing any behavior yet.
  */
 export const MODULE_NAME = "kits" as const;
+
+export { KitModel, toStoredKit } from "./models";
+export { runKitPipeline } from "./pipeline";
+export { kitRouter } from "./routes";

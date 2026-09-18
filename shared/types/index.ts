@@ -223,3 +223,51 @@ export const QUESTION_TYPES: readonly QuestionType[] = [
 ] as const;
 
 export const DIFFICULTIES: readonly Difficulty[] = ["easy", "medium", "hard"] as const;
+
+export type KitStatus = "pending" | "researching" | "generating" | "ready" | "failed";
+
+export type KitStageState = "pending" | "in_progress" | "done" | "failed";
+
+export interface KitFieldState {
+  input: KitStageState;
+  research: KitStageState;
+  requirements: KitStageState;
+  questions: KitStageState;
+  flashcards: KitStageState;
+  schedule: KitStageState;
+  validation: KitStageState;
+}
+
+export interface KitPracticeState {
+  mode: "off" | "review";
+  currentDay: number | null;
+  currentItemId: string | null;
+  completedCount: number;
+  startedAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface KitError {
+  code: string;
+  message: string;
+  details?: Record<string, unknown> | null;
+}
+
+export interface StoredKit {
+  id: Id;
+  ownerId: Id;
+  status: KitStatus;
+  input: Record<string, unknown>;
+  source?: KitSource | null;
+  company_brief?: CompanyBrief | Partial<CompanyBrief> | null;
+  role?: Role | Partial<Role> | null;
+  questions: Question[];
+  flashcards: Flashcard[];
+  schedule: ScheduleDay[];
+  coverage?: CoverageReport | null;
+  fieldState: KitFieldState;
+  practiceState: KitPracticeState;
+  error?: KitError | null;
+  createdAt: string;
+  updatedAt: string;
+}

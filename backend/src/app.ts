@@ -4,7 +4,8 @@ import cookieParser from "cookie-parser";
 import { env } from "./common/env";
 import { dbStatus } from "./common/db";
 import type { ApiResponse, HealthStatus } from "../../shared/types";
-import { authRouter, requireAuth } from "./auth";
+import { authRouter } from "./auth";
+import { kitRouter } from "./kits/routes";
 
 const startedAt = Date.now();
 
@@ -35,11 +36,7 @@ export function createApp(): Express {
   });
 
   app.use("/api/auth", authRouter);
-
-  // Protected stub — no kit generation. Later phases fill this in.
-  app.get("/api/kits", requireAuth, (_req: Request, res: Response<ApiResponse<unknown[]>>) => {
-    res.json({ success: true, data: [] });
-  });
+  app.use("/api/kits", kitRouter);
 
   app.use((_req: Request, res: Response<ApiResponse<never>>) => {
     res.status(404).json({ success: false, error: "Not found" });
