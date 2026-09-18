@@ -168,11 +168,17 @@ export function buildSchedule(input: ScheduleInput): ScheduleDay[] {
   });
 
   for (const card of flashcards) {
-    const linkedDays = card.question_ids
+    const requirementIds = card.requirement_ids ?? card.question_ids ?? [];
+    const linkedDays = questions
+      .filter((q) => q.requirement_ids.some((id) => requirementIds.includes(id)))
+      .map((q) => questionDay.get(q.id))
+      .filter((d): d is number => d !== undefined)
+      .sort((a, b) => a - b);
+    const fallbackQuestionDays = (card.question_ids ?? [])
       .map((id) => questionDay.get(id))
       .filter((d): d is number => d !== undefined)
       .sort((a, b) => a - b);
-    const dayIndex = linkedDays[0] ?? 0;
+    const dayIndex = (linkedDays.length > 0 ? linkedDays : fallbackQuestionDays)[0] ?? 0;
     const minutes = 5;
     dayItems[dayIndex].push({ kind: "flashcard", ref_id: card.id, minutes });
   }

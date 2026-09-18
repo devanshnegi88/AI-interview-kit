@@ -76,25 +76,30 @@ function assignQuestions(
 
 function assignFlashcards(
   draft: KitDraft,
+  requirements: Requirement[],
+  reqMap: Map<string, string>,
   questions: Question[],
   questionMap: Map<string, string>,
 ): Flashcard[] {
+  const requirementIds = new Set(requirements.map((r) => r.id));
+  const fallbackReq = requirements[0]?.id;
   const questionIds = new Set(questions.map((q) => q.id));
-  const fallbackQ = questions[0]?.id;
 
   return byId(
     draft.flashcards.map((fc) => {
       const id = ensureId("fc", fc.id, fc.front, fc.back);
-      const linked = fc.question_ids
-        .map((qid) => questionMap.get(qid) ?? qid)
-        .filter((qid) => questionIds.has(qid));
-      if (linked.length === 0 && fallbackQ) linked.push(fallbackQ);
+      const requirement_refs = (fc.requirement_ids ?? fc.question_ids ?? [])
+        .map((rid) => reqMap.get(rid) ?? rid)
+        .filter((rid) => requirementIds.has(rid));
+      const linked = requirement_refs.length > 0 ? requirement_refs : fallbackReq ? [fallbackReq] : [];
+      const legacyQuestionIds = (fc.question_ids ?? []).map((qid) => questionMap.get(qid) ?? qid).filter((qid) => questionIds.has(qid));
       return {
         id,
         front: fc.front.trim(),
         back: fc.back.trim(),
-        tags: fc.tags.map((t) => t.trim()).filter(Boolean),
-        question_ids: linked,
+        requirement_ids: linked,
+        ...(fc.question_ids || legacyQuestionIds.length > 0 ? { question_ids: legacyQuestionIds.length > 0 ? legacyQuestionIds : linked } : {}),
+        ...(fc.tags ? { tags: fc.tags.map((t) => t.trim()).filter(Boolean) } : {}),
       };
     }),
   );
@@ -108,7 +113,7 @@ function assignFlashcards(
 export function assembleKit(draft: KitDraft): InterviewKit {
   const { requirements, reqMap } = assignRequirements(draft);
   const { questions, questionMap } = assignQuestions(draft, requirements, reqMap);
-  const flashcards = assignFlashcards(draft, questions, questionMap);
+  const flashcards = assignFlashcards(draft, requirements, reqMap, questions, questionMap);
 
   const schedule = buildSchedule({
     questions,

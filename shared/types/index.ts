@@ -133,8 +133,11 @@ export interface Flashcard {
   id: string;
   front: string;
   back: string;
-  tags: string[];
-  question_ids: string[];
+  requirement_ids: string[];
+  /** @deprecated compatibility alias retained while older phases still emit question_ids. */
+  question_ids?: string[];
+  /** @deprecated compatibility alias retained while older phases still emit tags. */
+  tags?: string[];
 }
 
 export interface ScheduleItem {

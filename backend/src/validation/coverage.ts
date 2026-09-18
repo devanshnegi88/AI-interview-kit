@@ -195,9 +195,11 @@ export function computeCoverage(input: {
     });
   }
 
-  const linkedQuestionIds = new Set(input.flashcards.flatMap((fc) => fc.question_ids));
+  const linkedRequirementIds = new Set(
+    input.flashcards.flatMap((fc) => (fc.requirement_ids?.length ? fc.requirement_ids : fc.question_ids ?? [])),
+  );
   const unlinked = [...input.questions]
-    .filter((q) => !linkedQuestionIds.has(q.id))
+    .filter((q) => !q.requirement_ids.some((id) => linkedRequirementIds.has(id)))
     .sort((a, b) => a.id.localeCompare(b.id));
   for (const question of unlinked) {
     gaps.push({

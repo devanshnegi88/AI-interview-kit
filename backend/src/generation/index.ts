@@ -5,6 +5,7 @@
  * Phase 8: researchCompany.
  * Phase 9: independent question categories.
  * Phase 10: coverage loop (deterministic checker + missing-question fill).
+ * Phase 11: flashcard generation.
  */
 
 export { generateWithLLM, createLlmRuntime } from "../llm";
@@ -24,3 +25,4 @@ export type { QuestionGenContext, QuestionGenerationBundle } from "./questions";
 export { runCoverageLoop, MAX_COVERAGE_PASSES } from "./coverageLoop";
 export type { CoverageLoopResult, CoverageLoopOptions } from "./coverageLoop";
 export { generateMissingQuestions } from "./questions/missing";
+export { generateFlashcards, FLASHCARD_GENERATION_PROMPT } from "./flashcards";

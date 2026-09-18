@@ -96,8 +96,9 @@ export function passingDraft(overrides: Partial<KitSource> = {}): KitDraft {
       id: flashcardId(front, back),
       front,
       back,
-      tags: q.tags,
+      requirement_ids: q.requirement_ids.slice(0, 1),
       question_ids: [q.id!],
+      tags: q.tags,
     };
   });
 

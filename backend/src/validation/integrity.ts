@@ -13,7 +13,7 @@ export const INTEGRITY_CODES = {
  *
  * - IDs unique across requirements, questions, and flashcards.
  * - question.requirement_ids ⊆ role.requirements[].id
- * - flashcard.question_ids ⊆ questions[].id
+ * - flashcard.requirement_ids ⊆ role.requirements[].id
  * - schedule item ref_id exists for its kind
  *
  * Does not call an LLM. Does not recompute coverage or a schedule.
@@ -52,7 +52,17 @@ export function collectIntegrityIssues(kit: InterviewKit): KitValidationIssue[] 
   });
 
   kit.flashcards.forEach((fc, i) => {
-    fc.question_ids.forEach((qid, j) => {
+    const requirement_ids = fc.requirement_ids ?? fc.question_ids ?? [];
+    requirement_ids.forEach((rid, j) => {
+      if (!reqIds.has(rid)) {
+        issues.push(
+          issue(INTEGRITY_CODES.UNKNOWN_REQUIREMENT_ID, `Flashcard ${fc.id} references unknown requirement ${rid}.`, {
+            path: `flashcards[${i}].requirement_ids[${j}]`,
+          }),
+        );
+      }
+    });
+    (fc.question_ids ?? []).forEach((qid, j) => {
       if (!qIds.has(qid)) {
         issues.push(
           issue(INTEGRITY_CODES.UNKNOWN_QUESTION_ID, `Flashcard ${fc.id} references unknown question ${qid}.`, {

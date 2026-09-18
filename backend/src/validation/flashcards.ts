@@ -9,6 +9,7 @@ export const FLASHCARD_CODES = {
   EMPTY_FRONT: "FC_EMPTY_FRONT",
   EMPTY_BACK: "FC_EMPTY_BACK",
   SAME_SIDES: "FC_SAME_SIDES",
+  NO_REQUIREMENTS: "FC_NO_REQUIREMENTS",
   NO_QUESTIONS: "FC_NO_QUESTIONS",
   EMPTY_SET: "FC_EMPTY_SET",
 } as const;
@@ -53,8 +54,24 @@ export function validateFlashcards(flashcards: Flashcard[]): KitValidationIssue[
     }
     seenFronts.add(frontKey);
 
-    if (fc.question_ids.length === 0) {
-      issues.push(issue(FLASHCARD_CODES.NO_QUESTIONS, "Flashcard must cite at least one question_id.", { path: `${path}.question_ids` }));
+    const requirementIds = fc.requirement_ids ?? fc.question_ids ?? [];
+    if (requirementIds.length === 0) {
+      issues.push(
+        issue(
+          FLASHCARD_CODES.NO_REQUIREMENTS,
+          "Flashcard must cite at least one requirement_id.",
+          { path: `${path}.requirement_ids` },
+        ),
+      );
+    }
+    if (!fc.requirement_ids && fc.question_ids && fc.question_ids.length > 0) {
+      issues.push(
+        issue(
+          FLASHCARD_CODES.NO_QUESTIONS,
+          "Legacy flashcard.question_ids is deprecated; use flashcard.requirement_ids.",
+          { path: `${path}.question_ids` },
+        ),
+      );
     }
   });
 

@@ -220,8 +220,9 @@ export const FlashcardSchema = z
     id: stableId,
     front: z.string().trim().min(1),
     back: z.string().trim().min(1),
-    tags: z.array(z.string().trim().min(1)).min(1),
-    question_ids: z.array(z.string()).min(1),
+    requirement_ids: z.array(z.string()).min(1),
+    question_ids: z.array(z.string()).optional(),
+    tags: z.array(z.string().trim().min(1)).optional(),
   })
   .strict();
 
