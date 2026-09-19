@@ -28,10 +28,6 @@ function normalizeEditState(value: unknown, fallback: "generated" | "edited" | "
   return next === "generated" || next === "edited" || next === "pinned" ? next : fallback;
 }
 
-function withState<T extends Record<string, unknown>>(item: T, fallback: "generated" | "edited" | "pinned" = "generated") {
-  return { ...item, state: normalizeEditState((item as { state?: unknown }).state, fallback) } as T & { state: "generated" | "edited" | "pinned" };
-}
-
 async function refreshDerivedKit(kit: any) {
   if (!kit || !kit.source || !kit.role || !Array.isArray(kit.questions) || !Array.isArray(kit.flashcards)) {
     return kit;
@@ -112,7 +108,7 @@ kitRouter.post("/", requireAuth, async (req: Request, res: Response, next) => {
     const source = parsed.data;
 
     const kitDoc = await KitModel.create({
-      ownerId: req.user!.id,
+      ownerId: req.user!.id as any,
       status: "pending",
       input: cleanedInput,
       source,
@@ -179,6 +175,29 @@ kitRouter.get("/", requireAuth, async (req: Request, res: Response, next) => {
   }
 });
 
+kitRouter.get("/:id", requireAuth, requireOwner(async (req: Request) => {
+  const doc = await KitModel.findById(req.params.id).select("ownerId").lean();
+  return doc ? String((doc as { ownerId?: unknown }).ownerId ?? null) : null;
+}), async (req: Request, res: Response, next) => {
+  try {
+    const kit = await KitModel.findById(req.params.id).lean();
+    if (!kit) {
+      res.status(404).json({ success: false, error: "Kit not found" } satisfies ApiResponse<never>);
+      return;
+    }
+
+    const payload = serializeKit(kit);
+    if (!payload) {
+      res.status(404).json({ success: false, error: "Kit not found" } satisfies ApiResponse<never>);
+      return;
+    }
+
+    res.json({ success: true, data: payload } satisfies ApiResponse<StoredKit>);
+  } catch (err) {
+    next(err);
+  }
+});
+
 kitRouter.put("/:id", requireAuth, requireOwner(async (req: Request) => {
   const doc = await KitModel.findById(req.params.id).select("ownerId").lean();
   return doc ? String((doc as { ownerId?: unknown }).ownerId ?? null) : null;
@@ -202,7 +221,7 @@ kitRouter.put("/:id", requireAuth, requireOwner(async (req: Request) => {
       return;
     }
 
-    kitDoc.ownerId = req.user!.id;
+    kitDoc.ownerId = req.user!.id as any;
     kitDoc.status = "pending";
     kitDoc.input = cleanedInput;
     kitDoc.source = source;
@@ -258,6 +277,43 @@ kitRouter.put("/:id", requireAuth, requireOwner(async (req: Request) => {
   }
 });
 
+kitRouter.post("/:id/questions", requireAuth, requireOwner(async (req: Request) => {
+  const doc = await KitModel.findById(req.params.id).select("ownerId").lean();
+  return doc ? String((doc as { ownerId?: unknown }).ownerId ?? null) : null;
+}), async (req: Request, res: Response, next) => {
+  try {
+    const kit = await KitModel.findById(req.params.id);
+    if (!kit) {
+      res.status(404).json({ success: false, error: "Kit not found" } satisfies ApiResponse<never>);
+      return;
+    }
+
+    const requestPayload = (req.body && typeof req.body === "object" ? req.body : {}) as Record<string, unknown>;
+    const nextQuestion = {
+      ...requestPayload,
+      id: String(requestPayload.id ?? `q_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`),
+      requirement_ids: Array.isArray(requestPayload.requirement_ids) ? requestPayload.requirement_ids.map(String) : [],
+      tags: Array.isArray(requestPayload.tags) ? requestPayload.tags.map(String) : [],
+      answer_outline: Array.isArray(requestPayload.answer_outline) ? requestPayload.answer_outline.map(String) : [],
+      follow_ups: Array.isArray(requestPayload.follow_ups) ? requestPayload.follow_ups.map(String) : [],
+      state: normalizeEditState((requestPayload as { state?: unknown }).state ?? "edited"),
+    };
+
+    kit.questions = preserveGeneratedContent([...(kit.questions ?? []), nextQuestion as any]);
+    kit.status = "ready";
+    await refreshDerivedKit(kit);
+    await kit.save();
+    const savedKit = serializeKit(await KitModel.findById(req.params.id).lean());
+    if (!savedKit) {
+      res.status(500).json({ success: false, error: "Kit could not be loaded after update" } satisfies ApiResponse<never>);
+      return;
+    }
+    res.status(201).json({ success: true, data: savedKit } satisfies ApiResponse<StoredKit>);
+  } catch (err) {
+    next(err);
+  }
+});
+
 kitRouter.patch("/:id/company-brief", requireAuth, requireOwner(async (req: Request) => {
   const doc = await KitModel.findById(req.params.id).select("ownerId").lean();
   return doc ? String((doc as { ownerId?: unknown }).ownerId ?? null) : null;
@@ -280,132 +336,10 @@ kitRouter.patch("/:id/company-brief", requireAuth, requireOwner(async (req: Requ
     await kit.save();
 
     const payload = serializeKit(await KitModel.findById(req.params.id).lean());
-    res.json({ success: true, data: payload } satisfies ApiResponse<StoredKit>);
-  } catch (err) {
-    next(err);
-  }
-});
-
-kitRouter.post("/:id/questions", requireAuth, requireOwner(async (req: Request) => {
-  const doc = await KitModel.findById(req.params.id).select("ownerId").lean();
-  return doc ? String((doc as { ownerId?: unknown }).ownerId ?? null) : null;
-}), async (req: Request, res: Response, next) => {
-  try {
-    const kit = await KitModel.findById(req.params.id);
-    if (!kit) {
-      res.status(404).json({ success: false, error: "Kit not found" } satisfies ApiResponse<never>);
+    if (!payload) {
+      res.status(500).json({ success: false, error: "Kit could not be loaded after update" } satisfies ApiResponse<never>);
       return;
     }
-
-    const payload = (req.body && typeof req.body === "object" ? req.body : {}) as Record<string, unknown>;
-    const nextQuestion = {
-      ...payload,
-      id: String(payload.id ?? `q_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`),
-      requirement_ids: Array.isArray(payload.requirement_ids) ? payload.requirement_ids.map(String) : [],
-      tags: Array.isArray(payload.tags) ? payload.tags.map(String) : [],
-      answer_outline: Array.isArray(payload.answer_outline) ? payload.answer_outline.map(String) : [],
-      follow_ups: Array.isArray(payload.follow_ups) ? payload.follow_ups.map(String) : [],
-      state: normalizeEditState((payload as { state?: unknown }).state ?? "edited"),
-    };
-
-    kit.questions = preserveGeneratedContent([...(kit.questions ?? []), nextQuestion as any]);
-    kit.status = "ready";
-    await refreshDerivedKit(kit);
-    await kit.save();
-    const payloadSaved = serializeKit(await KitModel.findById(req.params.id).lean());
-    res.status(201).json({ success: true, data: payloadSaved } satisfies ApiResponse<StoredKit>);
-  } catch (err) {
-    next(err);
-  }
-});
-
-kitRouter.patch("/:id/questions/reorder", requireAuth, requireOwner(async (req: Request) => {
-  const doc = await KitModel.findById(req.params.id).select("ownerId").lean();
-  return doc ? String((doc as { ownerId?: unknown }).ownerId ?? null) : null;
-}), async (req: Request, res: Response, next) => {
-  try {
-    const kit = await KitModel.findById(req.params.id);
-    if (!kit) {
-      res.status(404).json({ success: false, error: "Kit not found" } satisfies ApiResponse<never>);
-      return;
-    }
-
-    const order = Array.isArray(req.body) ? req.body : Array.isArray((req.body as { ids?: unknown })?.ids) ? (req.body as { ids: unknown[] }).ids : [];
-    const ids = order.map((item) => String(item));
-    if (ids.length === 0) {
-      res.status(400).json({ success: false, error: "A question order is required" } satisfies ApiResponse<never>);
-      return;
-    }
-
-    const map = new Map((kit.questions ?? []).map((question) => [String((question as { id?: string }).id), question]));
-    const nextQuestions = ids.map((id) => map.get(id)).filter(Boolean) as any[];
-    const leftovers = (kit.questions ?? []).filter((question) => !ids.includes(String((question as { id?: string }).id)));
-    kit.questions = preserveGeneratedContent([...nextQuestions, ...leftovers]);
-    kit.status = "ready";
-    await refreshDerivedKit(kit);
-    await kit.save();
-
-    const payload = serializeKit(await KitModel.findById(req.params.id).lean());
-    res.json({ success: true, data: payload } satisfies ApiResponse<StoredKit>);
-  } catch (err) {
-    next(err);
-  }
-});
-
-kitRouter.patch("/:id/questions/:qid", requireAuth, requireOwner(async (req: Request) => {
-  const doc = await KitModel.findById(req.params.id).select("ownerId").lean();
-  return doc ? String((doc as { ownerId?: unknown }).ownerId ?? null) : null;
-}), async (req: Request, res: Response, next) => {
-  try {
-    const kit = await KitModel.findById(req.params.id);
-    if (!kit) {
-      res.status(404).json({ success: false, error: "Kit not found" } satisfies ApiResponse<never>);
-      return;
-    }
-
-    const existing = (kit.questions ?? []).find((question) => String((question as { id?: string }).id) === req.params.qid);
-    if (!existing) {
-      res.status(404).json({ success: false, error: "Question not found" } satisfies ApiResponse<never>);
-      return;
-    }
-
-    const patch = (req.body && typeof req.body === "object" ? req.body : {}) as Record<string, unknown>;
-    const updated = {
-      ...existing,
-      ...patch,
-      id: String(existing.id),
-      state: normalizeEditState((patch.state as string | undefined) ?? (((existing as { state?: unknown }).state ?? "edited") as string)),
-    } as any;
-
-    kit.questions = preserveGeneratedContent((kit.questions ?? []).map((question) => String((question as { id?: string }).id) === req.params.qid ? updated : question));
-    kit.status = "ready";
-    await refreshDerivedKit(kit);
-    await kit.save();
-
-    const payload = serializeKit(await KitModel.findById(req.params.id).lean());
-    res.json({ success: true, data: payload } satisfies ApiResponse<StoredKit>);
-  } catch (err) {
-    next(err);
-  }
-});
-
-kitRouter.delete("/:id/questions/:qid", requireAuth, requireOwner(async (req: Request) => {
-  const doc = await KitModel.findById(req.params.id).select("ownerId").lean();
-  return doc ? String((doc as { ownerId?: unknown }).ownerId ?? null) : null;
-}), async (req: Request, res: Response, next) => {
-  try {
-    const kit = await KitModel.findById(req.params.id);
-    if (!kit) {
-      res.status(404).json({ success: false, error: "Kit not found" } satisfies ApiResponse<never>);
-      return;
-    }
-
-    kit.questions = (kit.questions ?? []).filter((question) => String((question as { id?: string }).id) !== req.params.qid);
-    kit.status = "ready";
-    await refreshDerivedKit(kit);
-    await kit.save();
-
-    const payload = serializeKit(await KitModel.findById(req.params.id).lean());
     res.json({ success: true, data: payload } satisfies ApiResponse<StoredKit>);
   } catch (err) {
     next(err);
@@ -438,8 +372,12 @@ kitRouter.post("/:id/flashcards", requireAuth, requireOwner(async (req: Request)
     await refreshDerivedKit(kit);
     await kit.save();
 
-    const payloadSaved = serializeKit(await KitModel.findById(req.params.id).lean());
-    res.status(201).json({ success: true, data: payloadSaved } satisfies ApiResponse<StoredKit>);
+    const savedKit = serializeKit(await KitModel.findById(req.params.id).lean());
+    if (!savedKit) {
+      res.status(500).json({ success: false, error: "Kit could not be loaded after update" } satisfies ApiResponse<never>);
+      return;
+    }
+    res.status(201).json({ success: true, data: savedKit } satisfies ApiResponse<StoredKit>);
   } catch (err) {
     next(err);
   }
@@ -476,13 +414,17 @@ kitRouter.patch("/:id/flashcards/:fid", requireAuth, requireOwner(async (req: Re
     await kit.save();
 
     const payload = serializeKit(await KitModel.findById(req.params.id).lean());
+    if (!payload) {
+      res.status(500).json({ success: false, error: "Kit could not be loaded after update" } satisfies ApiResponse<never>);
+      return;
+    }
     res.json({ success: true, data: payload } satisfies ApiResponse<StoredKit>);
   } catch (err) {
     next(err);
   }
 });
 
-kitRouter.delete("/:id/flashcards/:fid", requireAuth, requireOwner(async (req: Request) => {
+kitRouter.delete("/:id/questions/:qid", requireAuth, requireOwner(async (req: Request) => {
   const doc = await KitModel.findById(req.params.id).select("ownerId").lean();
   return doc ? String((doc as { ownerId?: unknown }).ownerId ?? null) : null;
 }), async (req: Request, res: Response, next) => {
@@ -493,12 +435,16 @@ kitRouter.delete("/:id/flashcards/:fid", requireAuth, requireOwner(async (req: R
       return;
     }
 
-    kit.flashcards = (kit.flashcards ?? []).filter((flashcard) => String((flashcard as { id?: string }).id) !== req.params.fid);
+    kit.questions = (kit.questions ?? []).filter((question) => String((question as { id?: string }).id) !== req.params.qid);
     kit.status = "ready";
     await refreshDerivedKit(kit);
     await kit.save();
 
     const payload = serializeKit(await KitModel.findById(req.params.id).lean());
+    if (!payload) {
+      res.status(500).json({ success: false, error: "Kit could not be loaded after update" } satisfies ApiResponse<never>);
+      return;
+    }
     res.json({ success: true, data: payload } satisfies ApiResponse<StoredKit>);
   } catch (err) {
     next(err);
@@ -552,6 +498,88 @@ kitRouter.post("/:id/regenerate/:section", requireAuth, requireOwner(async (req:
     await kit.save();
 
     const payload = serializeKit(await KitModel.findById(req.params.id).lean());
+    if (!payload) {
+      res.status(500).json({ success: false, error: "Kit could not be loaded after update" } satisfies ApiResponse<never>);
+      return;
+    }
+    res.json({ success: true, data: payload } satisfies ApiResponse<StoredKit>);
+  } catch (err) {
+    next(err);
+  }
+});
+
+kitRouter.patch("/:id/questions/reorder", requireAuth, requireOwner(async (req: Request) => {
+  const doc = await KitModel.findById(req.params.id).select("ownerId").lean();
+  return doc ? String((doc as { ownerId?: unknown }).ownerId ?? null) : null;
+}), async (req: Request, res: Response, next) => {
+  try {
+    const kit = await KitModel.findById(req.params.id);
+    if (!kit) {
+      res.status(404).json({ success: false, error: "Kit not found" } satisfies ApiResponse<never>);
+      return;
+    }
+
+    const order = Array.isArray(req.body) ? req.body : Array.isArray((req.body as { ids?: unknown })?.ids) ? (req.body as { ids: unknown[] }).ids : [];
+    const ids = order.map((item) => String(item));
+    if (ids.length === 0) {
+      res.status(400).json({ success: false, error: "A question order is required" } satisfies ApiResponse<never>);
+      return;
+    }
+
+    const map = new Map((kit.questions ?? []).map((question) => [String((question as { id?: string }).id), question]));
+    const nextQuestions = ids.map((id) => map.get(id)).filter(Boolean) as any[];
+    const leftovers = (kit.questions ?? []).filter((question) => !ids.includes(String((question as { id?: string }).id)));
+    kit.questions = preserveGeneratedContent([...nextQuestions, ...leftovers]);
+    kit.status = "ready";
+    await refreshDerivedKit(kit);
+    await kit.save();
+
+    const payload = serializeKit(await KitModel.findById(req.params.id).lean());
+    if (!payload) {
+      res.status(500).json({ success: false, error: "Kit could not be loaded after update" } satisfies ApiResponse<never>);
+      return;
+    }
+    res.json({ success: true, data: payload } satisfies ApiResponse<StoredKit>);
+  } catch (err) {
+    next(err);
+  }
+});
+
+kitRouter.patch("/:id/questions/:qid", requireAuth, requireOwner(async (req: Request) => {
+  const doc = await KitModel.findById(req.params.id).select("ownerId").lean();
+  return doc ? String((doc as { ownerId?: unknown }).ownerId ?? null) : null;
+}), async (req: Request, res: Response, next) => {
+  try {
+    const kit = await KitModel.findById(req.params.id);
+    if (!kit) {
+      res.status(404).json({ success: false, error: "Kit not found" } satisfies ApiResponse<never>);
+      return;
+    }
+
+    const existing = (kit.questions ?? []).find((question) => String((question as { id?: string }).id) === req.params.qid);
+    if (!existing) {
+      res.status(404).json({ success: false, error: "Question not found" } satisfies ApiResponse<never>);
+      return;
+    }
+
+    const patch = (req.body && typeof req.body === "object" ? req.body : {}) as Record<string, unknown>;
+    const updated = {
+      ...existing,
+      ...patch,
+      id: String(existing.id),
+      state: normalizeEditState((patch.state as string | undefined) ?? (((existing as { state?: unknown }).state ?? "edited") as string)),
+    } as any;
+
+    kit.questions = preserveGeneratedContent((kit.questions ?? []).map((question) => String((question as { id?: string }).id) === req.params.qid ? updated : question));
+    kit.status = "ready";
+    await refreshDerivedKit(kit);
+    await kit.save();
+
+    const payload = serializeKit(await KitModel.findById(req.params.id).lean());
+    if (!payload) {
+      res.status(500).json({ success: false, error: "Kit could not be loaded after update" } satisfies ApiResponse<never>);
+      return;
+    }
     res.json({ success: true, data: payload } satisfies ApiResponse<StoredKit>);
   } catch (err) {
     next(err);

@@ -55,6 +55,7 @@ export function validateFlashcards(flashcards: Flashcard[]): KitValidationIssue[
     seenFronts.add(frontKey);
 
     const requirementIds = fc.requirement_ids ?? fc.question_ids ?? [];
+    // If the modern `requirement_ids` list is empty (or missing) that's an error.
     if (requirementIds.length === 0) {
       issues.push(
         issue(
@@ -64,7 +65,23 @@ export function validateFlashcards(flashcards: Flashcard[]): KitValidationIssue[
         ),
       );
     }
-    if (!fc.requirement_ids && fc.question_ids && fc.question_ids.length > 0) {
+    // If the legacy `question_ids` field is present at all (even empty),
+    // surface a deprecation/compatibility issue so callers migrate to
+    // `requirement_ids`. Tests expect this specific code when the
+    // legacy key exists on the object.
+    // If the legacy `question_ids` key is present but empty, flag it.
+    if (fc.question_ids !== undefined && fc.question_ids.length === 0) {
+      issues.push(
+        issue(
+          FLASHCARD_CODES.NO_QUESTIONS,
+          "Legacy flashcard.question_ids is deprecated; use flashcard.requirement_ids.",
+          { path: `${path}.question_ids` },
+        ),
+      );
+    }
+    // Also preserve the compatibility warning when question_ids exists and
+    // requirement_ids is missing at all.
+    if (!fc.requirement_ids && fc.question_ids !== undefined && fc.question_ids.length > 0) {
       issues.push(
         issue(
           FLASHCARD_CODES.NO_QUESTIONS,

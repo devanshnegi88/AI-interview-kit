@@ -248,8 +248,8 @@ export interface KitPracticeState {
   currentDay: number | null;
   currentItemId: string | null;
   completedCount: number;
-  startedAt?: string | null;
-  updatedAt?: string | null;
+  startedAt: string | null;
+  updatedAt: string | null;
 }
 
 export interface KitError {

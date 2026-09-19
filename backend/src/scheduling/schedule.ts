@@ -135,17 +135,44 @@ export function buildSchedule(input: ScheduleInput): ScheduleDay[] {
 
   const dayItems: ScheduleItem[][] = Array.from({ length: daysAvailable }, () => []);
 
+  const spread = daysAvailable >= questions.length;
   for (const question of questions) {
     const minutes = intMinutes(question.estimated_minutes);
     let placed = false;
-    for (let d = 0; d < daysAvailable; d += 1) {
-      const used = sumMinutes(dayItems[d]);
-      if (used === 0 || used + minutes <= budget) {
-        dayItems[d].push({ kind: "question", ref_id: question.id, minutes });
-        placed = true;
-        break;
+    if (spread) {
+      // Spread primary questions across empty days first when there are
+      // at least as many days as questions.
+      for (let d = 0; d < daysAvailable; d += 1) {
+        const used = sumMinutes(dayItems[d]);
+        if (used === 0) {
+          dayItems[d].push({ kind: "question", ref_id: question.id, minutes });
+          placed = true;
+          break;
+        }
+      }
+      if (placed) continue;
+
+      for (let d = 0; d < daysAvailable; d += 1) {
+        const used = sumMinutes(dayItems[d]);
+        if (used + minutes <= budget) {
+          dayItems[d].push({ kind: "question", ref_id: question.id, minutes });
+          placed = true;
+          break;
+        }
+      }
+    } else {
+      // Pack questions into earliest day possible when there are fewer
+      // days than questions (keep heavier/more important items earlier).
+      for (let d = 0; d < daysAvailable; d += 1) {
+        const used = sumMinutes(dayItems[d]);
+        if (used === 0 || used + minutes <= budget) {
+          dayItems[d].push({ kind: "question", ref_id: question.id, minutes });
+          placed = true;
+          break;
+        }
       }
     }
+
     if (!placed) {
       let best = 0;
       let bestUsed = sumMinutes(dayItems[0]);
