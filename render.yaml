@@ -1,0 +1,31 @@
+# Render manifest for deploying backend and frontend services
+services:
+  - type: web
+    name: trao-backend
+    env: docker
+    dockerfilePath: backend/Dockerfile
+    plan: free
+    buildCommand: ""
+    startCommand: "node dist/backend/src/server.js"
+    envVars:
+      - key: PORT
+        value: "4000"
+      - key: MONGODB_URI
+        value: "${MONGODB_URI}"
+
+  - type: web
+    name: trao-frontend
+    env: docker
+    dockerfilePath: frontend/Dockerfile
+    plan: free
+    buildCommand: ""
+    startCommand: "npm run start --prefix frontend"
+    envVars:
+      - key: PORT
+        value: "3000"
+      - key: NEXT_PUBLIC_API_URL
+        value: "https://your-backend.onrender.com"
+
+# Notes:
+# - Set real values for MONGODB_URI (and any secrets) in the Render dashboard or
+#   using Render's `envVars` secure values instead of committing them here.
